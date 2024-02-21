@@ -3,11 +3,11 @@ package unionfind
 import "fmt"
 
 type UnionFind interface {
-	Union(p int, q int)
-	Connected(p int, q int) bool
-	Find(p int) int
+	Union(p int, q int) error
+	Connected(p int, q int) (bool, error)
+	Find(p int) (int, error)
 	Count() int
-	validate(p int)
+	validate(p int) error
 }
 
 type unionFind struct {
