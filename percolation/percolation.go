@@ -21,7 +21,10 @@ type percolation struct {
 	end int
 }
 
-func NewPercolation(n int) *percolation {
+func NewPercolation(n int) (*percolation, error) {
+	if n < 1 {
+		return nil, fmt.Errorf("n must be an integer greater than 0")
+	}
 	pr := &percolation{}
 	pr.size = n * n + 2
 	pr.start = 0
@@ -34,7 +37,7 @@ func NewPercolation(n int) *percolation {
 		pr.uf.Union(pr.start, i)
 		pr.uf.Union(pr.end, pr.end - i)
 	}
-	return pr
+	return pr, nil
 }
 
 func (pr *percolation) flat(row int, col int) int {
@@ -49,7 +52,7 @@ func (pr *percolation) validateFlat(p int) error {
 }
 
 func (pr *percolation) validate(row int, col int) error {
-	if row < 1 || row >= pr.row_length || col < 1 || col >= pr.row_length {
+	if row < 1 || row > pr.row_length || col < 1 || col > pr.row_length {
 		return fmt.Errorf("point out of bounds")
 	}
 	return nil
@@ -64,7 +67,7 @@ func (pr *percolation) Open(row int, col int) error {
 		return nil
 	}
 	p := pr.flat(row, col)
-	pr.sites[p - 2] = true
+	pr.sites[p - 1] = true
 	pr.open_sites++
 	pr.neighboring(p)
 	return nil
@@ -75,7 +78,7 @@ func (pr *percolation) IsOpen(row int, col int) (bool, error) {
 		return false, err
 	}
 	p := pr.flat(row, col)
-	return pr.sites[p - 2], nil
+	return pr.sites[p - 1], nil
 }
 
 func (pr *percolation) neighboring(p int) {
@@ -105,4 +108,17 @@ func (pr *percolation) NumberOfOpenSites() int {
 func (pr *percolation) Percolates() bool {
 	res, _ := pr.uf.Connected(pr.start, pr.end)
 	return res
+}
+
+func (pr *percolation) PrintGrid() {
+	for i, v := range pr.sites {
+		if v {
+			fmt.Print("\x1b[37m■\x1b[0m")
+		} else {
+			fmt.Print("\x1b[31m■\x1b[0m")
+		}
+		if (i + 1) % pr.row_length == 0 {
+			fmt.Println()
+		}
+	}
 }
