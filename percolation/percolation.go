@@ -13,6 +13,7 @@ type Percolation interface {
 
 type percolation struct {
 	uf unionfind.UnionFind
+	full unionfind.UnionFind
 	size int
 	row_length int
 	sites []bool
@@ -33,8 +34,10 @@ func NewPercolation(n int) (*percolation, error) {
 	pr.sites = make([]bool, n*n)
 	pr.open_sites = 0
 	pr.uf = unionfind.NewUnionFind(pr.size)
+	pr.full = unionfind.NewUnionFind(pr.size - 1)
 	for i := pr.start + 1; i <= n; i++ {
 		pr.uf.Union(pr.start, i)
+		pr.full.Union(pr.start, i)
 		pr.uf.Union(pr.end, pr.end - i)
 	}
 	return pr, nil
@@ -45,7 +48,7 @@ func (pr *percolation) flat(row int, col int) int {
 }
 
 func (pr *percolation) validateFlat(p int) error {
-	if p > pr.size - 1 || p < 1 {
+	if p > pr.size - 2 || p < 1 {
 		return fmt.Errorf("point out of bounds")
 	}
 	return nil
@@ -57,6 +60,20 @@ func (pr *percolation) validate(row int, col int) error {
 	}
 	return nil
 } 
+
+func (pr *percolation) unionNeighbour(p int, n int, checkRow bool) {
+	if err := pr.validateFlat(n); err != nil || !pr.sites[n - 1]  {
+		return
+	}
+	if checkRow {
+		if (n - 1) / pr.row_length != (p - 1) / pr.row_length {
+			return
+		}
+	}
+	pr.uf.Union(p, n)
+	pr.full.Union(p, n)
+} 
+
 
 func (pr *percolation) Open(row int, col int) error {
 	open, err := pr.IsOpen(row, col)
@@ -82,13 +99,10 @@ func (pr *percolation) IsOpen(row int, col int) (bool, error) {
 }
 
 func (pr *percolation) neighboring(p int) {
-	neighbours := [4]int{ p - pr.row_length, p + pr.row_length, p - 1, p + 1}
-	for _, n := range neighbours {
-		if err := pr.validateFlat(n); err != nil {
-			continue
-		}
-		pr.uf.Union(p, n)
-	}
+	pr.unionNeighbour(p, p - pr.row_length, false)
+	pr.unionNeighbour(p, p + pr.row_length, false)
+	pr.unionNeighbour(p, p - 1, true)
+	pr.unionNeighbour(p, p + 1, true)
 }
 
 func (pr *percolation) IsFull(row int, col int) (bool, error) {
@@ -98,7 +112,7 @@ func (pr *percolation) IsFull(row int, col int) (bool, error) {
 		return open, nil
 	}
 	p := pr.flat(row, col)
-	return pr.uf.Connected(pr.start, p)
+	return pr.full.Connected(pr.start, p)
 }
 
 func (pr *percolation) NumberOfOpenSites() int {
