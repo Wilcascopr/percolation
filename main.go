@@ -54,7 +54,15 @@ func main() {
 				fmt.Println("the two elements in the line must be valid integers")
 				return
 			}
-			pr.Open(row, col)
+			if err = pr.Open(row, col); err != nil {
+				fmt.Println(err.Error())
+				break;
+			}
 	}
+	result := "does not percolates"
+	if pr.Percolates() {
+		result = "percolates"
+	}
+	fmt.Println("the system", result)
 	pr.PrintGrid()
 }
